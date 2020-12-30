@@ -3,25 +3,28 @@ using Discord.Commands;
 using Discord.WebSocket;
 using DiscordBots.Configuration;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace DiscordBots.SteamWorkshopVotingSystem
+namespace DiscordBots.SteamWorkshopVotingSystem.Service
 {
-    internal class BotService
+    public class BotService : IBotService
     {
-        private readonly ulong _channelId = GlobalVars.TestTextChannelId;
+        private readonly ulong _channelId = GlobalVars.TableTopTextChannel;
+        private readonly DiscordSocketClient _client;
 
-        internal static Task CreateLog(LogMessage logMsg)
+        public BotService(DiscordSocketClient client)
+        {
+            _client = client;
+        }
+
+        public Task CreateLog(LogMessage logMsg)
         {
             // TODO: Create proper log file
             Console.WriteLine(logMsg);
             return Task.CompletedTask;
         }
 
-        internal async Task MessageReceived(SocketUserMessage message, DiscordSocketClient client)
+        public async Task MessageReceived(IUserMessage message)
         {
             int argPos = 0;
 
@@ -32,22 +35,22 @@ namespace DiscordBots.SteamWorkshopVotingSystem
             var action = (correctChannel, correctPrefix, isBot) switch
             {
                 (true, true, _) => AddVotingEmojis(message),
-                (true, false, false) => DeleteMessage(message, client),
+                (true, false, false) => DeleteMessage(message),
                 _ => Task.CompletedTask
             };
 
             await action;
         }
 
-        private static async Task AddVotingEmojis(SocketUserMessage message)
+        private static async Task AddVotingEmojis(IMessage message)
         {
             await message.AddReactionAsync(new Emoji("🥵"));
             await message.AddReactionAsync(new Emoji("🥶"));
         }
 
-        private async Task DeleteMessage(SocketUserMessage message, DiscordSocketClient client)
+        private async Task DeleteMessage(IUserMessage message)
         {
-            var observedChannel = client.GetChannel(_channelId) as IMessageChannel;
+            var observedChannel = _client.GetChannel(_channelId) as IMessageChannel;
 
             await DeleteMessage(message, 0);
 
